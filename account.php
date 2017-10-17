@@ -54,7 +54,7 @@ if(isset($_POST["redplayer"])){
 
   $current_requests = explode("\n", file_get_contents("gamerequests.txt"));
   foreach($current_requests as $request){
-    if(strpos($username) === 0){
+    if(strpos($request, $username) === 0){
       $request_error_message .= "You already have a pending request<br>";
       break;
     }
@@ -81,7 +81,7 @@ if(isset($_POST["redplayer"])){
 }
 
 if($username == "Admin" && isset($_GET["run_games"])){
-  exec("bash /var/www/html/roundrobin.sh");
+  exec("bash /var/www/html/roundrobin.sh 1");
   header("location:account.php");
 }
 
@@ -126,11 +126,20 @@ if($username == "Admin" && isset($_GET["run_games"])){
   <?php } /*end of else -> $username == "Admin" */ ?>
   <hr>
   <h2>Request a game to play</h2>
-  <form method="post">
+  <form method="post" id="requestform">
+    <?php
+      $select_options = "<option>---</option>\n";
+      foreach($alljars as $jar){
+        if(strpos($jar, ".jar")>0){
+          $name = htmlspecialchars(explode(".", $jar)[0]);
+          $select_options .= sprintf("<option value=\"%s\">%s</option>\n", $name, $name);
+        }
+      }
+    ?>
     <?php if(strlen($request_error_message)>0){?><p style="color:red;"><?php echo $request_error_message; ?></p><?php } ?>
     <?php if(strlen($request_message)>0){?><p style="color:green;"><?php echo $request_message; ?></p><?php } ?>
-    <span class="label">Red player</span><input name="redplayer"><br>
-    <span class="label">Blue player</span><input name="blueplayer"><br>
+    <span class="label">Red player</span><select form="requestform" name="redplayer"><?php echo $select_options; ?></select><br>
+    <span class="label">Blue player</span><select form="requestform" name="blueplayer"><?php echo $select_options; ?></select><br>
     <input type="submit" name="submit" value="Submit Request">
   </form>
   

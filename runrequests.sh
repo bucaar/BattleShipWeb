@@ -8,7 +8,6 @@ fi
 
 path="jars"
 
-
 cat "gamerequests.txt" | head -"$num" | while read line; do
   tokens=(${line// / })
   java -jar "$path/${tokens[1]}" $>/dev/null &

@@ -6,4 +6,4 @@ echo "" > connections.log
 
 cd ..
 
-./game.py &
+./game.py > /dev/null 2>/dev/null &
