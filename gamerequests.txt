@@ -1,1 +1,2 @@
-JavaBossD JavaBossC.jar JavaBossF.jar
+JavaBossA JavaBossA.jar JavaBossB.jar
+JavaBossB JavaBossB.jar JavaBossC.jar

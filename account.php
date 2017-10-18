@@ -8,13 +8,12 @@ if(!isset($_SESSION["username"])){
 
 $username = $_SESSION["username"].trim();
 
-$login_error_message = "";
+//--------------------------------------
+//----------Upload a file---------------
+//--------------------------------------
+
+$upload_error_message = "";
 $login_message = "";
-
-$request_error_message = "";
-$request_message = "";
-
-$alljars = scandir("jars");
 
 if($username != "Admin" && isset($_FILES["fileToUpload"])){
   $target_dir = "./jars/";
@@ -23,19 +22,19 @@ if($username != "Admin" && isset($_FILES["fileToUpload"])){
 
   // Check file size
   if ($_FILES["fileToUpload"]["size"] > 500000)
-    $login_error_message .= "Sorry, your file is too large<br>";
+    $upload_error_message .= "Sorry, your file is too large<br>";
 
   // Allow certain file formats
   if($fileType != "jar")
-    $login_error_message .= "Sorry, only jar files are allowed<br>";
+    $upload_error_message .= "Sorry, only jar files are allowed<br>";
 
   // Allow certain file formats
   if(basename($_FILES["fileToUpload"]["name"]) != ($username . "." . $fileType))
-    $login_error_message .= "Sorry, the jar file must be named " . htmlspecialchars($username) . ".jar<br>";
+    $upload_error_message .= "Sorry, the jar file must be named " . htmlspecialchars($username) . ".jar<br>";
 
   //check if we have an error
-  if (strlen($login_error_message) > 0)
-    $login_error_message .= "Your file was not uploaded.<br>";
+  if (strlen($upload_error_message) > 0)
+    $upload_error_message .= "Your file was not uploaded.<br>";
   // if everything is ok, try to upload file
   else {
     if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
@@ -43,48 +42,68 @@ if($username != "Admin" && isset($_FILES["fileToUpload"])){
       $login_message .= "Your standings have been reset<br>";
       exec("bash /var/www/html/clearhistory.sh " . escapeshellcmd($username));
     } else {
-      $login_error_message .= "Sorry, there was an error uploading your file<br>";
+      $upload_error_message .= "Sorry, there was an error uploading your file<br>";
     }
   }
 }
+
+//--------------------------------------
+//--------Submit a game request---------
+//--------------------------------------
+
+$request_error_message = "";
+$request_message = "";
+
+$alljars = scandir("jars");
 
 if(isset($_POST["redplayer"])){
   $red = $_POST["redplayer"];
   $blue = $_POST["blueplayer"];
 
   $current_requests = explode("\n", file_get_contents("gamerequests.txt"));
+  $line = 1;
   foreach($current_requests as $request){
-    if(strpos($request, $username) === 0){
-      $request_error_message .= "You already have a pending request<br>";
+    if(strlen($request)==0)
+      continue;
+    $tokens = explode(" ", $request);
+    if(strpos($tokens[0], $username) === 0){
+      $request_error_message .= sprintf("You have already requested a match. It is #%d in queue<br>", $line);
       break;
     }
+    if(strpos($tokens[1], $red)===0 && strpos($tokens[2], $blue)===0){
+      $request_error_message .= sprintf("That match has already been requested by %s. It is #%d in queue<br>", htmlspecialchars($tokens[0]), $line);
+    }
+
+    $line += 1;
   }
 
-  if(!in_array($red . ".jar", $alljars)){
+  if(!in_array($red . ".jar", $alljars))
     $request_error_message .= sprintf("Could not locate script for %s<br>", $red);
-  }
-  if(!in_array($blue . ".jar", $alljars)){
+  if(!in_array($blue . ".jar", $alljars))
     $request_error_message .= sprintf("Could not locate script for %s<br>", $blue);
-  }
 
-  if(strlen($request_error_message)>0){
+  if(strlen($request_error_message)>0)
     $request_error_message .= "Your request has not been submitted<br>";
-  }
   else{
-    if(file_put_contents("gamerequests.txt", sprintf("%s %s.jar %s.jar\n", $username, $red, $blue), FILE_APPEND | LOCK_EX) === false){
+    if(file_put_contents("gamerequests.txt", sprintf("%s %s.jar %s.jar\n", $username, $red, $blue), FILE_APPEND | LOCK_EX) === false)
       $request_error_message .= "There was an error submitting your request<br>";
-    }
-    else {
+    else
       $request_message .= "Your request has been submitted<br>";
-    }
   }
 }
 
+//--------------------------------------
+//-----------Admin Buttons--------------
+//--------------------------------------
+
+if($username == "Admin" && isset($_GET["run_requests"])){
+  exec("bash /var/www/html/runrequests.sh");
+  header("location:account.php");
+}
 if($username == "Admin" && isset($_GET["run_games"])){
   exec("bash /var/www/html/roundrobin.sh 1");
   header("location:account.php");
 }
-
 ?>
 
 <html>
@@ -94,27 +113,30 @@ if($username == "Admin" && isset($_GET["run_games"])){
   <link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
+
 <div class="fixed-top navbar">
   <div class="max-size">
     <div class="brand">BattleShip</div>
     <div class="profile">Hello, <?php echo htmlspecialchars($username); ?>!</div>
   </div>
 </div>
+
 <div class="content max-size">
   <?php if($username != "Admin"){ ?>
     <h2>Upload your jar file:</h2>
     <form method="post" enctype="multipart/form-data">
-      <?php if(strlen($login_error_message)>0){?><p style="color:red;"><?php echo $login_error_message; ?></p><?php } ?>
+      <?php if(strlen($upload_error_message)>0){?><p style="color:red;"><?php echo $upload_error_message; ?></p><?php } ?>
       <?php if(strlen($login_message)>0){?><p style="color:green;"><?php echo $login_message; ?></p><?php } ?>
-      <div><span class="label">Select jar to upload:</span>
-      <input type="file" name="fileToUpload" id="fileToUpload">
-      <input type="submit" value="Upload" name="submit"></div>
+      <div>
+        <span class="label">Select jar to upload:</span>
+        <input type="file" name="fileToUpload" id="fileToUpload">
+        <input type="submit" value="Upload" name="submit">
+      </div>
       <?php
         $user_last_uploaded_time = filemtime("jars/$username.jar");
         $uploaddate = date ("F d Y h:i:s a", $user_last_uploaded_time);
-        if($user_last_uploaded_time == 0){
+        if($user_last_uploaded_time == 0)
           $uploaddate = "Never";
-        }
       ?>
       <span class="label">Last upload: </span> <?php echo htmlspecialchars($uploaddate); ?>
     </form>
@@ -122,10 +144,12 @@ if($username == "Admin" && isset($_GET["run_games"])){
 
   else { /* $username == "Admin" */ ?>
     <h2>Admin actions:</h2>
-    <a href="?run_games" class="admin-action">Run Games</a>
+    <a href="?run_requests" class="admin-action">Run Requested Games</a>
+    <a href="?run_games" class="admin-action">Run Random Games</a>
   <?php } /*end of else -> $username == "Admin" */ ?>
+
   <hr>
-  <h2>Request a game to play</h2>
+  <h2>Request a match</h2>
   <form method="post" id="requestform">
     <?php
       $select_options = "<option>---</option>\n";
@@ -142,7 +166,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
     <span class="label">Blue player</span><select form="requestform" name="blueplayer"><?php echo $select_options; ?></select><br>
     <input type="submit" name="submit" value="Submit Request">
   </form>
-  
+
   <hr>
   <h2>Current standings:</h2>
   <table class="standings">
@@ -195,9 +219,8 @@ if($username == "Admin" && isset($_GET["run_games"])){
     uasort($data, "compare_ratios");
 
     //display the table rows
-    if(sizeof($data) == 0){
+    if(sizeof($data) == 0)
       echo "<tr><td colspan=5>No game data.</td><tr>";
-    }
 
     $lastRatio = -1;
     $rank = 1;
@@ -213,18 +236,16 @@ if($username == "Admin" && isset($_GET["run_games"])){
         $tablerow = "<tr>";
 
       //see if we have a tie in rank with the last guy
-      if($lastRatio == $myratio){
+      if($lastRatio == $myratio)
         $ties += 1;
-      }
-      else{
+      else
         $ties = 0;
-      }
 
       //update the last ratio to the current one for the next iteration
       $lastRatio = $myratio;
       echo sprintf("%s<td>%d</td><td>%s</td><td>%d</td><td>%d</td><td>%4.2f%%</td>"
-      	  , $tablerow, $rank++ - $ties, $myusername, $data[$user]["wins"]
-      	  , $data[$user]["games"], $myratio*100);
+      	  , $tablerow, $rank++ - $ties, $myusername
+      	  , $data[$user]["wins"], $data[$user]["games"], $myratio*100);
     }
     ?>
   </table>
@@ -248,12 +269,11 @@ if($username == "Admin" && isset($_GET["run_games"])){
                             , htmlspecialchars($name2)
                             , htmlspecialchars(date ("F d Y h:i:s a", $log_filetime))
                             , $log_filetime < $user_last_uploaded_time && ($name1==$username || $name2==$username) ? "<span class=\"old-submission\">[OLD SUBMISSION]</span>": "");
-        if($name1 == $username || $name2 == $username){
+
+        if($name1 == $username || $name2 == $username)
           $yourGames[] = $linktext;
-        }
-        else{
+        else
           $otherGames[] = $linktext;
-        }
       }
     }
     ?>
