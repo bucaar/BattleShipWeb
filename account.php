@@ -7,16 +7,16 @@ if(!isset($_SESSION["username"])){
 }
 
 $username = $_SESSION["username"].trim();
-
+$path = "/var/www/html";
 //--------------------------------------
 //----------Upload a file---------------
 //--------------------------------------
 
 $upload_error_message = "";
-$login_message = "";
+$upload_message = "";
 
 if($username != "Admin" && isset($_FILES["fileToUpload"])){
-  $target_dir = "./jars/";
+  $target_dir = "$path/jars/";
   $target_file = $target_dir . basename($_FILES["fileToUpload"]["name"]);
   $fileType = pathinfo($target_file,PATHINFO_EXTENSION);
 
@@ -38,9 +38,15 @@ if($username != "Admin" && isset($_FILES["fileToUpload"])){
   // if everything is ok, try to upload file
   else {
     if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
-      $login_message .= "The file ". basename( $_FILES["fileToUpload"]["name"]). " has been uploaded<br>";
-      $login_message .= "Your standings have been reset<br>";
-      exec("bash /var/www/html/clearhistory.sh " . escapeshellcmd($username));
+      $upload_message .= "The file ". basename( $_FILES["fileToUpload"]["name"]). " has been uploaded<br>";
+      $upload_message .= "Your standings have been reset<br>";
+      $handshake_result = exec("bash $path/handshake.sh " . escapeshellarg($username));
+      if($handshake_result == "FAIL"){
+        $upload_error_message .= "There was an error with the server handshake. Your jar will be deleted.<br>";
+        echo "rm $target_file<br>";
+        echo exec("rm $target_file");
+      }
+      exec("bash $path/clearhistory.sh " . escapeshellarg($username));
     } else {
       $upload_error_message .= "Sorry, there was an error uploading your file<br>";
     }
@@ -77,6 +83,11 @@ if(isset($_POST["redplayer"])){
     $line += 1;
   }
 
+  if($red == "---" || $blue == "---")
+    $request_error_message .= "You must specify both a Red and Blue player<br>";
+  else if($red == $blue)
+    $request_error_message .= "You must specify two different opponents<br>";
+
   if(!in_array($red . ".jar", $alljars))
     $request_error_message .= sprintf("Could not locate script for %s<br>", $red);
   if(!in_array($blue . ".jar", $alljars))
@@ -97,11 +108,11 @@ if(isset($_POST["redplayer"])){
 //--------------------------------------
 
 if($username == "Admin" && isset($_GET["run_requests"])){
-  exec("bash /var/www/html/runrequests.sh");
+  exec("bash $path/runrequests.sh");
   header("location:account.php");
 }
 if($username == "Admin" && isset($_GET["run_games"])){
-  exec("bash /var/www/html/roundrobin.sh 1");
+  exec("bash $path/roundrobin.sh 1");
   header("location:account.php");
 }
 ?>
@@ -125,8 +136,8 @@ if($username == "Admin" && isset($_GET["run_games"])){
   <?php if($username != "Admin"){ ?>
     <h2>Upload your jar file:</h2>
     <form method="post" enctype="multipart/form-data">
+      <?php if(strlen($upload_message)>0){?><p style="color:green;"><?php echo $upload_message; ?></p><?php } ?>
       <?php if(strlen($upload_error_message)>0){?><p style="color:red;"><?php echo $upload_error_message; ?></p><?php } ?>
-      <?php if(strlen($login_message)>0){?><p style="color:green;"><?php echo $login_message; ?></p><?php } ?>
       <div>
         <span class="label">Select jar to upload:</span>
         <input type="file" name="fileToUpload" id="fileToUpload">
@@ -136,7 +147,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
         $user_last_uploaded_time = filemtime("jars/$username.jar");
         $uploaddate = date ("F d Y h:i:s a", $user_last_uploaded_time);
         if($user_last_uploaded_time == 0)
-          $uploaddate = "Never";
+          $uploaddate = "None";
       ?>
       <span class="label">Last upload: </span> <?php echo htmlspecialchars($uploaddate); ?>
     </form>
@@ -160,8 +171,8 @@ if($username == "Admin" && isset($_GET["run_games"])){
         }
       }
     ?>
-    <?php if(strlen($request_error_message)>0){?><p style="color:red;"><?php echo $request_error_message; ?></p><?php } ?>
     <?php if(strlen($request_message)>0){?><p style="color:green;"><?php echo $request_message; ?></p><?php } ?>
+    <?php if(strlen($request_error_message)>0){?><p style="color:red;"><?php echo $request_error_message; ?></p><?php } ?>
     <span class="label">Red player</span><select form="requestform" name="redplayer"><?php echo $select_options; ?></select><br>
     <span class="label">Blue player</span><select form="requestform" name="blueplayer"><?php echo $select_options; ?></select><br>
     <input type="submit" name="submit" value="Submit Request">
@@ -179,7 +190,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
   </tr>
   <?php
     //read in the results file
-    $results = file_get_contents("BattleShipServer/logs/results.log");
+    $results = file_get_contents("$path/BattleShipServer/logs/results.log");
     $lines = explode("\n", $results);
 
     $data = array();
@@ -252,7 +263,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
 
   <hr>
     <?php
-    $logs = scandir("BattleShipServer/logs/");
+    $logs = scandir("$path/BattleShipServer/logs/");
     $yourGames = array();
     $otherGames = array();
 
@@ -262,13 +273,14 @@ if($username == "Admin" && isset($_GET["run_games"])){
         $dotPos = strpos($log, ".");
         $name1 = substr($log, 0, $vsPos);
         $name2 = substr($log, $vsPos+2, $dotPos-$vsPos-2);
-        $log_filetime = filemtime("BattleShipServer/logs/" . $log);
+        $log_filetime = filemtime("$path/BattleShipServer/logs/" . $log);
         $linktext = sprintf("<li><a href=\"#\" onClick=\"window.open('visualize.html?%s', 'MyWindow', width=600, height=300); return false;\">%s vs. %s - %s %s</a></li>\n"
-                            , htmlspecialchars($log)
-                            , htmlspecialchars($name1)
-                            , htmlspecialchars($name2)
-                            , htmlspecialchars(date ("F d Y h:i:s a", $log_filetime))
-                            , $log_filetime < $user_last_uploaded_time && ($name1==$username || $name2==$username) ? "<span class=\"old-submission\">[OLD SUBMISSION]</span>": "");
+                            , htmlspecialchars($log), htmlspecialchars($name1)
+                            , htmlspecialchars($name2), htmlspecialchars(date ("F d Y h:i:s a", $log_filetime))
+                            , ($name1==$username || $name2==$username)
+                              && ($user_last_uploaded_time == 0 || $log_filetime < $user_last_uploaded_time)
+                                 ? "<span class=\"old-submission\">[OLD SUBMISSION]</span>"
+                                 : "");
 
         if($name1 == $username || $name2 == $username)
           $yourGames[] = $linktext;
