@@ -61,12 +61,12 @@ $request_error_message = "";
 $request_message = "";
 
 $alljars = scandir("jars");
+$current_requests = explode("\n", file_get_contents("gamerequests.txt"));
 
 if(isset($_POST["redplayer"])){
   $red = $_POST["redplayer"];
   $blue = $_POST["blueplayer"];
 
-  $current_requests = explode("\n", file_get_contents("gamerequests.txt"));
   $line = 1;
   foreach($current_requests as $request){
     if(strlen($request)==0)
@@ -78,6 +78,7 @@ if(isset($_POST["redplayer"])){
     }
     if(strpos($tokens[1], $red)===0 && strpos($tokens[2], $blue)===0){
       $request_error_message .= sprintf("That match has already been requested by %s. It is #%d in queue<br>", htmlspecialchars($tokens[0]), $line);
+      break;
     }
 
     $line += 1;
@@ -112,7 +113,7 @@ if($username == "Admin" && isset($_GET["run_requests"])){
   header("location:account.php");
 }
 if($username == "Admin" && isset($_GET["run_games"])){
-  exec("bash $path/roundrobin.sh 1");
+  exec("python3 $path/randomrequest.py");
   header("location:account.php");
 }
 ?>
@@ -156,7 +157,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
   else { /* $username == "Admin" */ ?>
     <h2>Admin actions:</h2>
     <a href="?run_requests" class="admin-action">Run Requested Games</a>
-    <a href="?run_games" class="admin-action">Run Random Games</a>
+    <a href="?run_games" class="admin-action">Request Random Games</a>
   <?php } /*end of else -> $username == "Admin" */ ?>
 
   <hr>
@@ -173,6 +174,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
     ?>
     <?php if(strlen($request_message)>0){?><p style="color:green;"><?php echo $request_message; ?></p><?php } ?>
     <?php if(strlen($request_error_message)>0){?><p style="color:red;"><?php echo $request_error_message; ?></p><?php } ?>
+    <span class="label">Current queue size:</span><span><?php echo sizeof($current_requests) - 1; ?></span><br>
     <span class="label">Red player</span><select form="requestform" name="redplayer"><?php echo $select_options; ?></select><br>
     <span class="label">Blue player</span><select form="requestform" name="blueplayer"><?php echo $select_options; ?></select><br>
     <input type="submit" name="submit" value="Submit Request">
@@ -290,6 +292,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
     }
     ?>
 
+  <?php if($username != "Admin") { ?>
   <h2>Watch your games</h2>
   <ul class="watch-games">
     <?php
@@ -302,6 +305,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
     ?>
   </ul>
   <hr>
+  <?php } /* end if(username != "Admin") */ ?>
   <h2>Watch other games</h2>
   <ul class="watch-games">
     <?php
