@@ -274,7 +274,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
         $name1 = substr($log, 0, $vsPos);
         $name2 = substr($log, $vsPos+2, $dotPos-$vsPos-2);
         $log_filetime = filemtime("$path/BattleShipServer/logs/" . $log);
-        $linktext = sprintf("<li><a href=\"#\" onClick=\"window.open('visualize.html?%s', 'MyWindow', width=600, height=300); return false;\">%s vs. %s - %s %s</a></li>\n"
+        $linktext = sprintf("<li><a href=\"#\" onClick=\"window.open('visualizer.html?%s', 'MyWindow', width=600, height=300); return false;\">%s vs. %s - %s %s</a></li>\n"
                             , htmlspecialchars($log), htmlspecialchars($name1)
                             , htmlspecialchars($name2), htmlspecialchars(date ("F d Y h:i:s a", $log_filetime))
                             , ($name1==$username || $name2==$username)

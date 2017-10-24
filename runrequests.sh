@@ -7,12 +7,13 @@ if [ -n "$1" ]
 fi
 
 path="jars"
+port="4949"
 
 cat "gamerequests.txt" | head -"$num" | while read line; do
   tokens=(${line// / })
-  java -jar "$path/${tokens[1]}" $>/dev/null &
+  java -jar "$path/${tokens[1]}" "$port" $>/dev/null &
   sleep .5
-  java -jar "$path/${tokens[2]}" $>/dev/null &
+  java -jar "$path/${tokens[2]}" "$port" $>/dev/null &
   sleep .5
 done
 
