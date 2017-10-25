@@ -13,16 +13,15 @@ var bulletRadius = gridx/4;
 var namePadding = 50;
 var ms = 100;
 var gameData;
+var lines;
 
+var current_line = 0;
 var run = 0;
 var stepForward = 0;
 var stepBack = 0;
 
 //gameboard and context
 var ctx = null, gameBoard = null;
-
-//this is important for the setInterval function
-var interval = null;
 
 //index values occupied by ships for each player
 var gridSpaces = new Array();
@@ -88,19 +87,24 @@ function urlLoaded(){
 function start(){
 	//start at line 1 of the file and go from there
 	run = 1;
+
 	//add event listeners for buttons that will soon be coming
+	lines = gameData.split("\n");
 	munchData();
 }
 //======================================================================================================================================================//
-//processes data up to given line
-function munchData(line){
-	var lines = gameData.split("\n");
-	var line=0;
-	interval = setInterval(function(){
-			parseLine(lines[line++]);
-			drawGrid(0);
-			drawGrid(1);
-	}, ms);
+//processes data
+function munchData(){
+	if(current_line == lines.length){
+		run = 0;
+		return;
+	}
+	parseLine(lines[current_line++]);
+	drawGrid(0);
+	drawGrid(1);
+	if(run){
+		setTimeout(function(){munchData(lines)}, ms);
+	}
 }
 
 //could be included in munchdata, but this makes it more modular.
@@ -147,7 +151,7 @@ function parseLine(lineData){
 		//example line:
 		//WIN 1
 		console.log(lineData + "game over!");
-		clearInterval(interval);
+		run = 0;
 	}
 	else{
 		//something went terribly wrong! (or I did something terribly wrong :( )
