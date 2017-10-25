@@ -117,7 +117,7 @@ if(isset($_POST["redplayer"])){
 <div class="fixed-top navbar">
   <div class="max-size">
     <div class="brand">BattleShip</div>
-    <div class="profile">Hello, <?php echo htmlspecialchars($username); ?>!</div>
+    <div class="profile">Hello, <?php echo htmlspecialchars($username); ?>!<a href="logout.php" title="logout" class="logout">&#10006;</a></div>
   </div>
 </div>
 
