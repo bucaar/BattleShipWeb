@@ -115,6 +115,9 @@ else if($is_login){
     }
     else{
       if(password_verify($_POST["pin_code"], $info[2])){
+        $_SESSION["username"] = $info[1];
+        header("location:account.php");
+        die("Redirecting to <a href=\"account.php\">account page</a>");
         $login_error_message .= "Login success<br>";
       }
       else{
