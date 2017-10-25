@@ -232,7 +232,7 @@ if($username == "Admin" && isset($_GET["run_games"])){
     function compare_ratios($user1, $user2){
       if($user1["ratio"] == $user2["ratio"])
         return 0;
-      return $user1["ratio"] < $user2["ratio"];
+      return ($user1["ratio"] < $user2["ratio"]) ? 1 : -1;
     }
 
     uasort($data, "compare_ratios");
@@ -274,6 +274,21 @@ if($username == "Admin" && isset($_GET["run_games"])){
     $logs = scandir("$path/BattleShipServer/logs/");
     $yourGames = array();
     $otherGames = array();
+    function compare_times($f1, $f2){
+      $f1t = 0;
+      $f2t = 0;
+      $path = "/var/www/html";
+
+      if(strpos($f1, "VS") !== false)
+        $f1t = filemtime("$path/BattleShipServer/logs/$f1");
+      if(strpos($f2, "VS") !== false)
+        $f2t = filemtime("$path/BattleShipServer/logs/$f2");
+
+      if($f1t == $f2t) return 0;
+      return ($f1t < $f2t) ? 1 : -1;
+    }
+
+    usort($logs, "compare_times");
 
     foreach($logs as $log){
       $vsPos = strpos($log, "VS");
