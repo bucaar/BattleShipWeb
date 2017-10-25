@@ -89,9 +89,9 @@ if(isset($_POST["redplayer"])){
   else if($red == $blue)
     $request_error_message .= "You must specify two different opponents<br>";
 
-  if(!in_array($red . ".jar", $alljars))
+  if($red != "---" && !in_array($red . ".jar", $alljars))
     $request_error_message .= sprintf("Could not locate script for %s<br>", $red);
-  if(!in_array($blue . ".jar", $alljars))
+  if($blue != "---" && !in_array($blue . ".jar", $alljars))
     $request_error_message .= sprintf("Could not locate script for %s<br>", $blue);
 
   if(strlen($request_error_message)>0)
@@ -202,6 +202,12 @@ if($username == "Admin" && isset($_GET["run_games"])){
       if(strlen($line)==0) continue;
 
       $tokens = explode(" ", $line);
+
+      //skip those who play with themselves
+      if($tokens[0] === $tokens[2]){
+        continue;
+      }
+
       if(!isset($data[$tokens[0]])) {
         $data[$tokens[0]] = array("wins"=>0,
                                   "games"=>0,
@@ -275,6 +281,11 @@ if($username == "Admin" && isset($_GET["run_games"])){
         $dotPos = strpos($log, ".");
         $name1 = substr($log, 0, $vsPos);
         $name2 = substr($log, $vsPos+2, $dotPos-$vsPos-2);
+
+        //skip those who play with themselves
+        if($name1 === $name2){
+          continue;
+        }
         $log_filetime = filemtime("$path/BattleShipServer/logs/" . $log);
         $linktext = sprintf("<li><a href=\"#\" onClick=\"window.open('visualizer.html?%s', 'MyWindow', width=600, height=300); return false;\">%s vs. %s - %s %s</a></li>\n"
                             , htmlspecialchars($log), htmlspecialchars($name1)
