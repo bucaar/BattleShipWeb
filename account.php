@@ -104,18 +104,6 @@ if(isset($_POST["redplayer"])){
   }
 }
 
-//--------------------------------------
-//-----------Admin Buttons--------------
-//--------------------------------------
-
-if($username == "Admin" && isset($_GET["run_requests"])){
-  exec("bash $path/runrequests.sh");
-  header("location:account.php");
-}
-if($username == "Admin" && isset($_GET["run_games"])){
-  exec("python3 $path/randomrequest.py");
-  header("location:account.php");
-}
 ?>
 
 <html>
@@ -152,14 +140,6 @@ if($username == "Admin" && isset($_GET["run_games"])){
       ?>
       <span class="label">Last upload: </span> <?php echo htmlspecialchars($uploaddate); ?>
     </form>
-  <?php } // end if($username != "Admin")
-
-  else { /* $username == "Admin" */ ?>
-    <h2>Admin actions:</h2>
-    <a href="?run_requests" class="admin-action">Run Requested Games</a>
-    <a href="?run_games" class="admin-action">Request Random Games</a>
-  <?php } /*end of else -> $username == "Admin" */ ?>
-
   <hr>
   <h2>Request a match</h2>
   <form method="post" id="requestform">
@@ -179,8 +159,9 @@ if($username == "Admin" && isset($_GET["run_games"])){
     <span class="label">Blue player</span><select form="requestform" name="blueplayer"><?php echo $select_options; ?></select><br>
     <input type="submit" name="submit" value="Submit Request">
   </form>
-
   <hr>
+  <?php } /* end if($username != "Admin") */?>
+
   <h2>Current standings:</h2>
   <table class="standings">
   <tr>
