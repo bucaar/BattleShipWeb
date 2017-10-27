@@ -9,16 +9,15 @@ Made by Isaac Burton
 var padding = 100;
 var gridx = 50;
 var gridy = 50;
-var bulletRadius = gridx/4;
+var bulletRadius = gridx/8;
 var namePadding = 50;
-var ms = 100;
+var shipPadding = gridx/4;
+var ms = 250;
 var gameData;
 var lines;
 
 var current_line = 0;
 var run = 0;
-var stepForward = 0;
-var stepBack = 0;
 
 //gameboard and context
 var ctx = null, gameBoard = null;
@@ -28,8 +27,8 @@ var gridSpaces = new Array();
 var shotSpaces = new Array();
 
 //colors!
-var shipColor = "#DDDDDD";
-var oceanColor = "#00FFFF";
+var shipColor = "#CCCCCC";
+var oceanColor = "#00CCFF";
 var bulletColor = "#000000";
 var hitColor = "#FF0000";
 var missColor = "#FFFFFF";
@@ -62,7 +61,7 @@ for(var id = 0; id <= 1; id++){
 
 //======================================================================================================================================================//
 
-function urlLoaded(){
+function bodyLoaded(){
 	var url = window.location.href;
 	var param = url.split("?");
 
@@ -73,9 +72,10 @@ function urlLoaded(){
 		client.onreadystatechange = function(){
 			if(client.readyState === XMLHttpRequest.DONE && client.status === 200){
 				gameData = client.responseText;
+				lines = gameData.split("\n");
 				gameBoard = document.getElementById("myCanvas");
 				ctx = gameBoard.getContext("2d");
-				start();
+				play();
 			}
 		}
 		client.send();
@@ -84,14 +84,26 @@ function urlLoaded(){
 //file:///Users/tamer/Documents/bs/canvas_v3/index.html?JavaBossVSBoss.log
 //======================================================================================================================================================//
 
-function start(){
-	//start at line 1 of the file and go from there
-	run = 1;
+function back(){
+	pause();
+	unMunchData();
+}
 
-	//add event listeners for buttons that will soon be coming
-	lines = gameData.split("\n");
+function pause(){
+	run = 0;
+}
+
+function step(){
+	pause();
 	munchData();
 }
+
+function play(){
+	if(run) return;
+	run = 1;
+	munchData();
+}
+
 //======================================================================================================================================================//
 //processes data
 function munchData(){
@@ -105,6 +117,15 @@ function munchData(){
 	if(run){
 		setTimeout(function(){munchData(lines)}, ms);
 	}
+}
+
+function unMunchData(){
+	if(current_line == 0){
+		return;
+	}
+	unParseLine(lines[--current_line]);
+	drawGrid(0);
+	drawGrid(1);
 }
 
 //could be included in munchdata, but this makes it more modular.
@@ -121,17 +142,16 @@ function parseLine(lineData){
 		ctx.beginPath();
 		ctx.font = "44px Arial";
 		ctx.fillStyle = textColor;
-		ctx.fillText(playerName, 10 + id * (gridx * 10 + padding), 35);
-		}
+		ctx.fillText(playerName, 10 + id * (gridx * 10 + padding), 40);
+	}
 	else if(lineType === "PLA"){
 		//place the ships through a method, return 0?
 		//example line:
 		//PLACE 0: {"B": [3, 1, "h"], "C": [3, 8, "h"], "S": [1, 2, "h"], "P": [2, 6, "h"], "D": [1, 5, "h"]}
 		var ships = JSON.parse(lineData.slice(9));
 		var player = Number(lineData[6]);
-		console.log(lineData[6]);
 		for(var key in ships){
-			shipConstructor(player, ships[key][0], ships[key][1], ships[key][2], key);
+			placeShip(player, ships[key][0], ships[key][1], ships[key][2], key);
 		}
 	}
 	else if(lineType === "SHO"){
@@ -150,18 +170,28 @@ function parseLine(lineData){
 		//declare winner and stop program
 		//example line:
 		//WIN 1
-		console.log(lineData + "game over!");
-		run = 0;
 	}
 	else{
 		//something went terribly wrong! (or I did something terribly wrong :( )
-		console.log("error...");
+	}
+}
+
+//decideds the type of line and acts accordingly
+function unParseLine(lineData){
+	var lineType = String(lineData.slice(0,3));
+	if(lineType === "SHO"){
+		//remove bullet from the players ID to the coordinates specified
+		//example line:
+		//SHOOT 0: [5, 5]
+		var location = JSON.parse(lineData.slice(8));
+		var id = Math.abs(Number(lineData[6])-1);
+		shotSpaces[id][location[0]][location[1]] = null;
 	}
 }
 
 //======================================================================================================================================================//
 
-function shipConstructor(id, x, y, orien, type){
+function placeShip(id, x, y, orien, type){
 	var width = gridx;
 	var height = gridy;
 	var length = 1;
@@ -183,7 +213,6 @@ function shipConstructor(id, x, y, orien, type){
 			length = 2;
 			break;
 		default:
-			alert("no length was set");
 			length = 0;
 			break;
 		}
@@ -191,7 +220,7 @@ function shipConstructor(id, x, y, orien, type){
 	//depending on orientation
 	if(orien === "h"){
 		width *= length;
-	
+
 		for (var i = x; i < length + x; i++) {
 			gridSpaces[id][i][y] = type;
 		}
@@ -204,13 +233,17 @@ function shipConstructor(id, x, y, orien, type){
 		}
 	}
 	else{
-		console.log("Error setting orientation for ship " + type + " " + x + " " + y);
 	}
 }
 
 //======================================================================================================================================================//
 
 function drawGrid(id){
+	//draw the ocean
+	ctx.fillStyle = oceanColor;
+	ctx.rect(id*(10 * gridx + padding), namePadding, gridx*10, gridy*10);
+	ctx.fill();
+
 	//get columns ready
 	for(var i = 0; i < 10; i++){
 		//for each row...
@@ -221,39 +254,52 @@ function drawGrid(id){
 			var y = j*gridy + namePadding;
 			//if there is not ocean, there is a ship, so fill the tile with the ships color
 			if(gridSpaces[id][i][j] !== " "){
-				ctx.fillStyle = shipColor;
-				ctx.rect(x, y, gridx, gridy);
-				ctx.fill();
-				//if this has been marked as shot, draw a red circle on the ship space
-				if(shotSpaces[id][i][j] === true){
-					ctx.beginPath();
-					ctx.fillStyle = hitColor;
-					ctx.arc(x + gridx/2, y + gridy/2, bulletRadius, 0, Math.PI*2, true);
+				//we need to make sure this cell is the first cell of this ship
+				if(i>0 && gridSpaces[id][i][j] === gridSpaces[id][i-1][j]){
+					//nothing
+				}
+				else if(j>0 && gridSpaces[id][i][j] === gridSpaces[id][i][j-1]){
+					//nothing
+				}
+				else{
+					var dir = "h";
+					if(j<9 && gridSpaces[id][i][j] === gridSpaces[id][i][j+1]){
+						dir = "v";
+					}
+					
+					var length = gridx;
+					if(gridSpaces[id][i][j] === "C") length *= 5;
+					if(gridSpaces[id][i][j] === "B") length *= 4;
+					if(gridSpaces[id][i][j] === "S") length *= 3;
+					if(gridSpaces[id][i][j] === "D") length *= 3;
+					if(gridSpaces[id][i][j] === "P") length *= 2;
+					
+					var width = gridx;
+					var height = gridx;
+					
+					if(dir === "h")
+						width = length;
+					else
+						height = length;
+
+					ctx.fillStyle = shipColor;
+					ctx.ellipse(x+width/2, y+height/2, width/2-shipPadding/2, height/2-shipPadding/2, 0, 0, 2*Math.PI);
 					ctx.fill();
 				}
 			}
-			//if the space is ocean, color it as ocean
-			else{
-				ctx.fillStyle = oceanColor;
-				ctx.rect(x, y, gridx, gridy);
-				ctx.fill();
-				//if this place has been hit it will draw a white circle
-				if(shotSpaces[id][i][j] === false){
-					ctx.beginPath();
+			//if this place has been hit it will draw a colored circle
+			if(shotSpaces[id][i][j] !== null){
+				ctx.beginPath();
+				if(shotSpaces[id][i][j])
+					ctx.fillStyle = hitColor;
+				else
 					ctx.fillStyle = missColor;
-					ctx.arc(x + gridy/2, y + gridy/2, bulletRadius, 0, Math.PI*2, true);
-					ctx.fill();
-				}
+				ctx.arc(x + gridy/2, y + gridy/2, bulletRadius, 0, Math.PI*2, true);
+				ctx.fill();
 			}
 		}
 	}
 }
-
-//======================================================================================================================================================//
-
-//======================================================================================================================================================//
-
-//======================================================================================================================================================//
 
 //======================================================================================================================================================//
 

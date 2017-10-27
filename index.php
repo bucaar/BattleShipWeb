@@ -13,11 +13,11 @@ $is_login = isset($_POST["login_submit"]);
 $is_register = isset($_POST["register_submit"]);
 $is_change = isset($_POST["change_submit"]);
 
-function lookup_cs_id($cs_id){
+function lookup_cs_uid($cs_uid){
   $users = explode("\n",file_get_contents("/var/www/roster.txt"));
   foreach($users as $user){
     $info = explode(" ", $user);
-    if(strtolower($cs_id) === strtolower($info[0])){
+    if(strtolower($cs_uid) === strtolower($info[0])){
       return $info;
     }
   }
@@ -39,12 +39,12 @@ function escape_backreference($x){
   return preg_replace('/\$(\d)/', '\\\$$1', $x);
 }
 
-function update_account($cs_id, $username, $pin){
+function update_account($cs_uid, $username, $pin){
   $file = file_get_contents("/var/www/roster.txt");
   $password = password_hash($pin, PASSWORD_DEFAULT);
   //ensure that the $2y$10.. isn't used a a preg backreference
   $password = escape_backreference($password);
-  $updated_file = preg_replace("/^" . $cs_id . "/m", sprintf("%s %s %s", $cs_id, $username, $password), $file);
+  $updated_file = preg_replace("/^" . $cs_uid . "/m", sprintf("%s %s %s", $cs_uid, $username, $password), $file);
   if($file === $updated_file){
     return false;
   }
@@ -55,12 +55,12 @@ function update_account($cs_id, $username, $pin){
   return $result > 0;
 }
 
-function update_password($cs_id, $pin){
+function update_password($cs_uid, $pin){
   $file = file_get_contents("/var/www/roster.txt");
   $password = password_hash($pin, PASSWORD_DEFAULT);
   //ensure that the $2y$10.. isn't used a a preg backreference
   $password = escape_backreference($password);
-  $updated_file = preg_replace("/^(" . $cs_id . ") (\w+) .*/m", "$1 $2 $password", $file);
+  $updated_file = preg_replace("/^(" . $cs_uid . ") (\w+) .*/m", "$1 $2 $password", $file);
   if($file === $updated_file){
     return false;
   }
@@ -73,9 +73,9 @@ function update_password($cs_id, $pin){
 
 //check if they are regestering
 if($is_register){
-  //validate cs_id length > 4
-  if(!preg_match("/^\w{4,}$/", $_POST["cs_id"])){
-    $register_error_message .= "You must provide a valid CS ID<br>";
+  //validate cs_uid length > 4
+  if(!preg_match("/^\w{4,}$/", $_POST["cs_uid"])){
+    $register_error_message .= "You must provide a valid CS UID<br>";
   }
   //validate username length 4-15 [a-zA-Z_]
   else if(!preg_match("/^[a-zA-Z_]{4,15}$/", $_POST["username"])){
@@ -92,12 +92,12 @@ if($is_register){
   //everything valid
   else{
     //ensure they haven't already enrolled
-    $info = lookup_cs_id($_POST["cs_id"]);
+    $info = lookup_cs_uid($_POST["cs_uid"]);
     if($info === false){
-      $register_error_message .= "Could not find an account that matches the specified CS ID<br>";
+      $register_error_message .= "Could not find an account that matches the specified CS UID<br>";
     }
     else if(sizeof($info)>1){
-      $register_error_message .= "This CS ID has already been registered<br>";
+      $register_error_message .= "This CS UID has already been registered<br>";
     }
     else if(is_username_taken($_POST["username"])){
       $register_error_message .= "This bot name is already being used<br>";
@@ -114,9 +114,9 @@ if($is_register){
 }
 //check if they are logging in
 else if($is_login){
-  //validate cs_id length > 4
-  if(!preg_match("/^\w{4,}$/", $_POST["cs_id"])){
-    $login_error_message .= "You must provide a valid CS ID<br>";
+  //validate cs_uid length > 4
+  if(!preg_match("/^\w{4,}$/", $_POST["cs_uid"])){
+    $login_error_message .= "You must provide a valid CS UID<br>";
   }
   //validate pin being 6 digit number
   else if(!preg_match("/^\d{6}$/", $_POST["pin_code"])){
@@ -125,12 +125,12 @@ else if($is_login){
   //everything valid
   else{
     //ensure they have already enrolled
-    $info = lookup_cs_id($_POST["cs_id"]);
+    $info = lookup_cs_uid($_POST["cs_uid"]);
     if($info === false){
-      $login_error_message .= "Could not find an account that matches the specified CS ID<br>";
+      $login_error_message .= "Could not find an account that matches the specified CS UID<br>";
     }
     else if(sizeof($info) == 1){
-      $login_error_message .= "This CS ID has not yet been registered.<br>";
+      $login_error_message .= "This CS UID has not yet been registered.<br>";
     }
     else{
       if(password_verify($_POST["pin_code"], $info[2])){
@@ -140,16 +140,16 @@ else if($is_login){
         $login_error_message .= "Login success<br>";
       }
       else{
-        $login_error_message .= "CS ID or Pin code is incorrect<br>";
+        $login_error_message .= "CS UID or Pin code is incorrect<br>";
       }
     }
   }
 }
 //check if they are changing their pin
 else if($is_change){
-  //validate cs_id length > 4
-  if(!preg_match("/^\w{4,}$/", $_POST["cs_id"])){
-    $change_error_message .= "You must provide a valid CS ID<br>";
+  //validate cs_uid length > 4
+  if(!preg_match("/^\w{4,}$/", $_POST["cs_uid"])){
+    $change_error_message .= "You must provide a valid CS UID<br>";
   }
   //validate pin being 6 digit number
   else if(!preg_match("/^\d{6}$/", $_POST["pin_code_old"])){
@@ -165,12 +165,12 @@ else if($is_change){
   //everything valid
   else{
     //ensure they haven't already enrolled
-    $info = lookup_cs_id($_POST["cs_id"]);
+    $info = lookup_cs_uid($_POST["cs_uid"]);
     if($info === false){
-      $change_error_message .= "Could not find an account that matches the specified CS ID<br>";
+      $change_error_message .= "Could not find an account that matches the specified CS UID<br>";
     }
     else if(sizeof($info) == 1){
-      $change_error_message .= "This CS ID has not yet been registered<br>";
+      $change_error_message .= "This CS UID has not yet been registered<br>";
     }
     else if(!password_verify($_POST["pin_code_old"], $info[2])){
       $change_error_message .= "Current pin code is incorrect<br>";
@@ -205,7 +205,7 @@ else if($is_change){
   <h4>Login to BattleShip</h4>
   <form method="post">
     <?php if(strlen($login_error_message)>0) echo "<p style=\"color:red\">$login_error_message</p>"; ?>
-    <span class="label">CS ID</span><input name="cs_id" value="<?php if($is_login) echo htmlspecialchars($_POST["cs_id"]); ?>"><br>
+    <span class="label">CS UID</span><input name="cs_uid" value="<?php if($is_login) echo htmlspecialchars($_POST["cs_uid"]); ?>"><br>
     <span class="label">Pin code</span><input type="password" name="pin_code"><br>
     <input type="submit" value="Login" name="login_submit">
   </form>
@@ -214,7 +214,7 @@ else if($is_change){
   <form method="post">
     <?php if(strlen($register_message)>0) echo "<p style=\"color:green\">$register_message</p>"; ?>
     <?php if(strlen($register_error_message)>0) echo "<p style=\"color:red\">$register_error_message</p>"; ?>
-    <span class="label">CS ID</span><input name="cs_id" value="<?php if($is_register) echo htmlspecialchars($_POST["cs_id"]); ?>"><br>
+    <span class="label">CS UID</span><input name="cs_uid" value="<?php if($is_register) echo htmlspecialchars($_POST["cs_uid"]); ?>"><br>
     <span class="label">Desired bot name</span><input name="username" value="<?php if($is_register) echo htmlspecialchars($_POST["username"]); ?>"><br>
     <span class="label">Pin code</span><input type="password" name="pin_code"><br>
     <span class="label">Repeat pin code</span><input type="password" name="pin_code_repeat"><br>
@@ -225,7 +225,7 @@ else if($is_change){
   <form method="post">
     <?php if(strlen($change_message)>0) echo "<p style=\"color:green\">$change_message</p>"; ?>
     <?php if(strlen($change_error_message)>0) echo "<p style=\"color:red\">$change_error_message</p>"; ?>
-    <span class="label">CS ID</span><input name="cs_id" value="<?php if($is_change) echo htmlspecialchars($_POST["cs_id"]); ?>"><br>
+    <span class="label">CS UID</span><input name="cs_uid" value="<?php if($is_change) echo htmlspecialchars($_POST["cs_uid"]); ?>"><br>
     <span class="label">Current pin code</span><input type="password" name="pin_code_old"><br>
     <span class="label">New pin code</span><input type="password" name="pin_code"><br>
     <span class="label">Repeat pin code</span><input type="password" name="pin_code_repeat"><br>
