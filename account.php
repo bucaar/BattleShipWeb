@@ -6,8 +6,11 @@ if(!isset($_SESSION["username"])){
   die("You must be logged in to see this page. Redirecting to <a href=\"index.php\">Login</a>");
 }
 
+require("logger.php");
+
 $username = $_SESSION["username"].trim();
 $path = "/var/www/html";
+
 //--------------------------------------
 //----------Upload a file---------------
 //--------------------------------------
@@ -51,6 +54,10 @@ if($username != "Admin" && isset($_FILES["fileToUpload"])){
       $upload_error_message .= "Sorry, there was an error uploading your file<br>";
     }
   }
+  logger_write(sprintf("Upload JAR Attempt - FILE:%s,MESSAGE:%s",
+                       $target_file,
+                       $upload_message . $upload_error_message));
+
 }
 
 //--------------------------------------
@@ -102,6 +109,10 @@ if(isset($_POST["redplayer"])){
     else
       $request_message .= "Your request has been submitted<br>";
   }
+  logger_write(sprintf("Request Game Attempt - RED:%s,BLUE:%s,MESSAGE:%s",
+                       $red,
+                       $blue,
+                       $request_message . $request_error_message));
 }
 
 ?>

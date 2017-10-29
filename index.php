@@ -1,8 +1,16 @@
 <?php
 session_start();
 
+if(isset($_SESSION["username"])){
+  header("location:account.php");
+  die("Redirecting you to <a href=\"account.php\">your account</a>");
+}
+
+require("logger.php");
+
 $path = "/var/www/html";
 
+$login_message = "";
 $login_error_message = "";
 $register_error_message = "";
 $register_message = "";
@@ -39,7 +47,7 @@ function escape_backreference($x){
   return preg_replace('/\$(\d)/', '\\\$$1', $x);
 }
 
-function update_account($cs_uid, $username, $pin){
+function create_account($cs_uid, $username, $pin){
   $file = file_get_contents("/var/www/roster.txt");
   $password = password_hash($pin, PASSWORD_DEFAULT);
   //ensure that the $2y$10.. isn't used a a preg backreference
@@ -103,7 +111,7 @@ if($is_register){
       $register_error_message .= "This bot name is already being used<br>";
     }
     else{
-      if(update_account($info[0], $_POST["username"], $_POST["pin_code"])){
+      if(create_account($info[0], $_POST["username"], $_POST["pin_code"])){
         $register_message .= "Account has been registered!<br>";
       }
       else{
@@ -111,6 +119,10 @@ if($is_register){
       }
     }
   }
+  logger_write(sprintf("Register Attempt - CS_UID:%s,USERNAME:%s,MESSAGE:%s",
+                       $_POST["cs_uid"],
+                       $_POST["username"],
+                       $register_message . $register_error_message));
 }
 //check if they are logging in
 else if($is_login){
@@ -135,15 +147,22 @@ else if($is_login){
     else{
       if(password_verify($_POST["pin_code"], $info[2])){
         $_SESSION["username"] = $info[1];
+        $login_message .= "Login success<br>";
+        logger_write(sprintf("Login Attempt - CS_UID:%s,MESSAGE:%s",
+                             $_POST["cs_uid"],
+                             $login_message . $login_error_message));
+
         header("location:account.php");
         die("Redirecting to <a href=\"account.php\">account page</a>");
-        $login_error_message .= "Login success<br>";
       }
       else{
         $login_error_message .= "CS UID or Pin code is incorrect<br>";
       }
     }
   }
+  logger_write(sprintf("Login Attempt - CS_UID:%s,MESSAGE:%s",
+                       $_POST["cs_uid"],
+                       $login_message . $login_error_message));
 }
 //check if they are changing their pin
 else if($is_change){
@@ -184,7 +203,9 @@ else if($is_change){
       }
     }
   }
-
+  logger_write(sprintf("Pin Change Attempt - CS_UID:%s,MESSAGE:%s",
+                       $_POST["cs_uid"],
+                       $change_message . $change_error_message));
 }
 ?>
 
@@ -204,6 +225,7 @@ else if($is_change){
 <div class="content max-size">
   <h4>Login to BattleShip</h4>
   <form method="post">
+    <?php if(strlen($login_message)>0) echo "<p style=\"color:green\">$login_message</p>"; ?>
     <?php if(strlen($login_error_message)>0) echo "<p style=\"color:red\">$login_error_message</p>"; ?>
     <span class="label">CS UID</span><input name="cs_uid" value="<?php if($is_login) echo htmlspecialchars($_POST["cs_uid"]); ?>"><br>
     <span class="label">Pin code</span><input type="password" name="pin_code"><br>
