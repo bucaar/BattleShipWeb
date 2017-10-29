@@ -45,9 +45,8 @@ if($username != "Admin" && isset($_FILES["fileToUpload"])){
       $upload_message .= "Your standings have been reset<br>";
       $handshake_result = exec("bash $path/handshake.sh " . escapeshellarg($username));
       if($handshake_result == "FAIL"){
-        $upload_error_message .= "There was an error with the server handshake. Your jar will be deleted.<br>";
-        echo "rm $target_file<br>";
-        echo exec("rm $target_file");
+        $upload_error_message .= "There was an error with the server handshake. Your upload will be deleted.<br>Ensure your Java class name matches your bot name and your program does not generate any output before calling the start method of the protocol class.<br>If this seems like an error, please contact <a href=\"mailto:Aaron.L.Buchholz@ndsu.edu\">Aaron Buchholz</a>";
+        exec("rm $target_file");
       }
       exec("bash $path/clearhistory.sh " . escapeshellarg($username));
     } else {

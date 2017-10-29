@@ -9,6 +9,14 @@ fi
 path="/var/www/html"
 port="4949"
 
+running=$(ps aux | grep "game\.py" | wc -l)
+
+if [ "$running" != "1" ]
+  then
+    echo "Not running"
+    exit 1
+fi
+
 cat "$path/gamerequests.txt" | head -"$num" | while read line; do
   tokens=(${line// / })
   java -jar "$path/jars/${tokens[1]}" "$port" $>/dev/null &

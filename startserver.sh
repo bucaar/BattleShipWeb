@@ -1,10 +1,21 @@
-cd BattleShipServer/logs
+cd BattleShipServer
 
-#rm Java* 2>/dev/null
-#echo "" > results.log
-#echo "" > connections.log
+serverrunning=$(ps aux | grep "game\.py" | wc -l)
 
-cd ..
+if [ "$serverrunning" != "0" ]
+  then
+    echo "Server already running"
+  else
+    ./game.py > /dev/null 2>/dev/null &
+fi
 
-./game.py > /dev/null 2>/dev/null &
-./handshakeserver.py > /dev/null 2>/dev/null &
+handshakerunning=$(ps aux | grep "handshakeserver\.py" | wc -l)
+
+if [ "$handshakerunning" != "0" ]
+  then
+    echo "Handshake server already running"
+  else
+    ./handshakeserver.py > /dev/null 2>/dev/null &
+fi
+
+
