@@ -176,7 +176,7 @@ if(isset($_POST["redplayer"])){
   <table class="standings">
   <tr>
     <th>Rank</th>
-    <th>Username</th>
+    <th>Bot Name</th>
     <th>Games Won</th>
     <th>Games Played</th>
     <th>Percent Won</th>

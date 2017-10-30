@@ -43,6 +43,22 @@ function is_username_taken($username){
   return false;
 }
 
+function is_banned_username($username){
+  $words = explode("\n",file_get_contents("/var/www/bannedWords.txt"));
+  var_dump($words);
+  foreach($words as $word){
+    if(strlen($word) == 0){
+      continue;
+    }
+    $pos = strpos(strtolower($username), $word);
+    echo "$word, $pos<br>";
+    if($pos >= 0){
+      return true;
+    }
+  }
+  return false;
+}
+
 function escape_backreference($x){
   return preg_replace('/\$(\d)/', '\\\$$1', $x);
 }
@@ -109,6 +125,9 @@ if($is_register){
     }
     else if(is_username_taken($_POST["username"])){
       $register_error_message .= "This bot name is already being used<br>";
+    }
+    else if(is_banned_username($_POST["username"])){
+      $register_error_message .= "This bot name may be offensive.<br>";
     }
     else{
       if(create_account($info[0], $_POST["username"], $_POST["pin_code"])){
