@@ -32,6 +32,9 @@ $log_contents = array_reverse(explode("\n", file_get_contents("activity.log", "r
 <div class="content">
 <h4>BattleShip Activity</h4>
 <a href="account.php" class="hyperlink">Go Back</a>
+<form>
+  <span class="label">Smart Filter</span><input id="filter" value="<?php echo date("m/d/Y"); ?>" onkeyup="filterTable(this.value);"><br>
+</form>
 <table class="activity">
 <tr>
   <th>Timestamp</th>
@@ -44,16 +47,57 @@ $log_contents = array_reverse(explode("\n", file_get_contents("activity.log", "r
     if(!preg_match("/^\\[(.*)\\] \\((.*)@(.*)\\) (.*)$/", $line, $matches)){
       continue;
     }
-    echo sprintf("<tr><td>%s</td><td>%s</td><td>%s</td><td style=\"white-space:normal;\">%s</td></tr>"
+    echo sprintf("<tr class=\"activity-row\"><td>%s</td><td>%s</td><td>%s</td><td style=\"white-space:normal;\">%s</td></tr>"
                  , date("m/d/Y h:i:s a", strtotime($matches[1]))
                  , htmlspecialchars($matches[2])
                  , $matches[3]
                  , htmlspecialchars($matches[4]));
   }
 ?>
+<tr id="noDataRow" style="display:none;"><td colspan=4>No Activity Data</td></tr>
 </table>
 <a href="account.php" class="hyperlink">Go Back</a>
 </div>
+
+<script>
+var rows = document.getElementsByClassName("activity-row");
+var filter = document.getElementById("filter").value;
+filterTable(filter);
+
+function filterTable(text){
+  text = text.trim().toLowerCase();
+  var tokens = text.split(/\s+/);
+
+  var hiddenRows = 0;
+  for(var i=0;i<rows.length;i++){
+    var row = rows[i];
+    var innerText = row.innerText.toLowerCase();
+
+    if(tokens.length == 1 && tokens[0].length == 0){
+      row.style.display = "table-row";
+    }
+    else{
+      row.style.display = "table-row";
+      for(var j=0;j<tokens.length;j++){
+        var tok = tokens[j];
+        if(innerText.indexOf(tok) < 0){
+          row.style.display = "none";
+          hiddenRows += 1;
+          break;
+        }
+      }
+    }
+  }
+  if(hiddenRows == rows.length){
+    document.getElementById("noDataRow").style.display="table-row";
+  }
+  else{
+    document.getElementById("noDataRow").style.display="none";
+  }
+
+}
+
+</script>
 
 </body>
 </html>
