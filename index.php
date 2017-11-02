@@ -45,15 +45,13 @@ function is_username_taken($username){
 
 function is_banned_username($username){
   $words = explode("\n",file_get_contents("/var/www/bannedWords.txt"));
-  var_dump($words);
   foreach($words as $word){
     if(strlen($word) == 0){
       continue;
     }
     $pos = strpos(strtolower($username), $word);
-    echo "$word, $pos<br>";
-    if($pos >= 0){
-      return true;
+    if($pos !== false && $pos >= 0){
+      return $word;
     }
   }
   return false;
@@ -97,6 +95,11 @@ function update_password($cs_uid, $pin){
 
 //check if they are regestering
 if($is_register){
+  $_POST["username"] = trim($_POST["username"]);
+  $_POST["cs_uid"] = trim($_POST["cs_uid"]);
+
+  $banned_username = is_banned_username($_POST["username"]);
+
   //validate cs_uid length > 4
   if(!preg_match("/^\w{4,}$/", $_POST["cs_uid"])){
     $register_error_message .= "You must provide a valid CS UID<br>";
@@ -126,8 +129,8 @@ if($is_register){
     else if(is_username_taken($_POST["username"])){
       $register_error_message .= "This bot name is already being used<br>";
     }
-    else if(is_banned_username($_POST["username"])){
-      $register_error_message .= "This bot name may be offensive.<br>";
+    else if($banned_username !== false){
+      $register_error_message .= "This bot name may be offensive due to the substring \"$banned_username\".<br>";
     }
     else{
       if(create_account($info[0], $_POST["username"], $_POST["pin_code"])){
@@ -145,6 +148,8 @@ if($is_register){
 }
 //check if they are logging in
 else if($is_login){
+  $_POST["cs_uid"] = trim($_POST["cs_uid"]);
+
   //validate cs_uid length > 4
   if(!preg_match("/^\w{4,}$/", $_POST["cs_uid"])){
     $login_error_message .= "You must provide a valid CS UID<br>";
@@ -185,6 +190,8 @@ else if($is_login){
 }
 //check if they are changing their pin
 else if($is_change){
+  $_POST["cs_uid"] = trim($_POST["cs_uid"]);
+
   //validate cs_uid length > 4
   if(!preg_match("/^\w{4,}$/", $_POST["cs_uid"])){
     $change_error_message .= "You must provide a valid CS UID<br>";

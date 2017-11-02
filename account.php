@@ -144,7 +144,7 @@ if(isset($_POST["redplayer"])){
       </div>
       <?php
         $user_last_uploaded_time = filemtime("jars/$username.jar");
-        $uploaddate = date ("F d Y h:i:s a", $user_last_uploaded_time);
+        $uploaddate = date ("m/d/Y h:i:s a", $user_last_uploaded_time);
         if($user_last_uploaded_time == 0)
           $uploaddate = "None";
       ?>
@@ -170,7 +170,28 @@ if(isset($_POST["redplayer"])){
     <input type="submit" name="submit" value="Submit Request">
   </form>
   <hr>
-  <?php } /* end if($username != "Admin") */?>
+  <?php } /* end if($username != "Admin") */
+  else { ?>
+  <h2>View the activity log</h2>
+  <a class="hyperlink" href="activity.php">Activity</a>
+  <hr>
+  <h2>Registered Users</h2>
+  <ul>
+    <?php
+    $users = explode("\n", file_get_contents("../roster.txt"));
+    foreach($users as $user){
+      if(strlen($user) == 0) continue;
+      $tokens = explode(" ", $user);
+      if(sizeof($tokens) > 1){
+        echo sprintf("<li>%s - %s</li>"
+                     , htmlspecialchars($tokens[0])
+                     , htmlspecialchars($tokens[1]));
+      }
+    }
+    ?>
+  </ul>
+  <hr>
+  <?php } /* end else: $username == "Admin" */ ?>
 
   <h2>Current standings:</h2>
   <table class="standings">
@@ -293,7 +314,7 @@ if(isset($_POST["redplayer"])){
           continue;
         }
         $log_filetime = filemtime("$path/BattleShipServer/logs/" . $log);
-        $linktext = sprintf("<li><a href=\"#\" onClick=\"window.open('visualizer.html?%s', 'MyWindow', width=600, height=300); return false;\">%s vs. %s - %s %s</a></li>\n"
+        $linktext = sprintf("<li><a class=\"hyperlink\" href=\"#\" onClick=\"window.open('visualizer.html?%s', 'MyWindow', width=600, height=300); return false;\">%s vs. %s - %s %s</a></li>\n"
                             , htmlspecialchars($log), htmlspecialchars($name1)
                             , htmlspecialchars($name2), htmlspecialchars(date ("F d Y h:i:s a", $log_filetime))
                             , ($name1==$username || $name2==$username)
@@ -311,7 +332,7 @@ if(isset($_POST["redplayer"])){
 
   <?php if($username != "Admin") { ?>
   <h2>Watch your games</h2>
-  <ul class="watch-games">
+  <ul>
     <?php
     if(sizeof($yourGames)==0){
       echo "<p>No game data.</p>";
@@ -322,9 +343,13 @@ if(isset($_POST["redplayer"])){
     ?>
   </ul>
   <hr>
-  <?php } /* end if(username != "Admin") */ ?>
+  <?php } /* end if(username != "Admin") */ 
+  else { ?>
+
+  <?php } /* end else: username == "Admin" */ ?>
+
   <h2>Watch other games</h2>
-  <ul class="watch-games">
+  <ul>
     <?php
     if(sizeof($otherGames)==0){
       echo "<p>No game data.</p>";
