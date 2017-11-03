@@ -56,8 +56,14 @@ form .label {
   margin-right: 10px;
   width: 150px;
   margin-bottom: 10px;
+  padding-top: 5px;
 }
-
+form input, form select {
+  width: 440px;
+}
+form input[type="submit"] {
+  width: 150px;
+}
 
 .activity, .activity th, .activity td {
   border: 1px solid black;
@@ -112,6 +118,9 @@ form .label {
 ul {
   list-style: none;
   padding-left: 0px;
+}
+li {
+  padding-top: 5px;
 }
 .old-submission{
   color: red;

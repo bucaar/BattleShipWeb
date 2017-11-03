@@ -23,6 +23,7 @@ var run = 0;
 var ctx = null, gameBoard = null;
 
 //index values occupied by ships for each player
+var playerNames = new Array("", "");
 var gridSpaces = new Array();
 var shotSpaces = new Array();
 
@@ -137,7 +138,8 @@ function parseLine(lineData){
 		//example line:
 		//NAME 0: Dummy
 		var id = lineData[5];
-		var playerName = lineData.slice(7, lineData.length);
+		var playerName = lineData.slice(8, lineData.length);
+		playerNames[id] = playerName;
 		//document.getElementById("namePlayer" + player).innerHTML = lineData.slice(7, lineData.length);
 		ctx.beginPath();
 		ctx.font = "44px Arial";
@@ -166,10 +168,21 @@ function parseLine(lineData){
 		}
 		shotSpaces[id][location[0]][location[1]] = wasHit;
 	}
+	else if(lineType === "ERR"){
+		//example line:
+		//ERROR 0: XYZ
+		var id = lineData[6];
+		var error = lineData.slice(9, lineData.length);
+
+                alert("Error from " + playerNames[id] + ": " + error);
+	}
 	else if(lineType === "WIN"){
 		//declare winner and stop program
 		//example line:
 		//WIN 1
+		var id = lineData[4];
+
+                alert(playerNames[id] + " has won!");
 	}
 	else{
 		//something went terribly wrong! (or I did something terribly wrong :( )
