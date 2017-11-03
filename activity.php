@@ -33,7 +33,7 @@ $log_contents = array_reverse(explode("\n", file_get_contents("activity.log", "r
 <div class="max-size">
   <h4>BattleShip Activity</h4>
   <a href="account.php" class="hyperlink">Go Back</a>
-  <form>
+  <form onsubmit="return false;">
     <span class="label">Smart Filter:</span><input id="filter" value="<?php echo date("m/d/Y"); ?>" onkeyup="filterTable(this.value);"><br>
   </form>
 </div>
