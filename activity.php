@@ -35,12 +35,13 @@ $log_contents = array_reverse(explode("\n", file_get_contents("activity.log", "r
   <a href="account.php" class="hyperlink">Go Back</a>
   <form onsubmit="return false;">
     <span class="label">Smart Filter:</span><input id="filter" value="<?php echo date("m/d/Y"); ?>" onkeyup="filterTable(this.value);"><br>
+    <span class="label"></span><span>Spaces delimit search tokens. '~' prefix negates match.</span><br>
   </form>
 </div>
 <table class="activity">
 <tr>
   <th>Timestamp</th>
-  <th>Username</th>
+  <th>Bot Name</th>
   <th>IP Address</th>
   <th>Message</th>
 </tr>
@@ -84,7 +85,10 @@ function filterTable(text){
       row.style.display = "table-row";
       for(var j=0;j<tokens.length;j++){
         var tok = tokens[j];
-        if(innerText.indexOf(tok) < 0){
+        var invert = tok[0] === "~";
+        if(invert) tok = tok.substring(1);
+
+        if(!invert && innerText.indexOf(tok) < 0 || invert && innerText.indexOf(tok) >= 0){
           row.style.display = "none";
           hiddenRows += 1;
           break;
