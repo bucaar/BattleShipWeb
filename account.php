@@ -194,6 +194,7 @@ if(isset($_POST["redplayer"])){
   <?php } /* end else: $username == "Admin" */ ?>
 
   <h2>Current standings:</h2>
+  <span>Hover over a row for details.</span>
   <table class="standings">
   <tr>
     <th>Rank</th>
@@ -214,6 +215,8 @@ if(isset($_POST["redplayer"])){
       if(strlen($line)==0) continue;
 
       $tokens = explode(" ", $line);
+      //tokens[0] -> winner
+      //tokens[2] -> loser
 
       //skip those who play with themselves
       if($tokens[0] === $tokens[2]){
@@ -223,16 +226,26 @@ if(isset($_POST["redplayer"])){
       if(!isset($data[$tokens[0]])) {
         $data[$tokens[0]] = array("wins"=>0,
                                   "games"=>0,
-                                  "ratio"=>0);
+                                  "ratio"=>0,
+                                  "breakdown"=>array());
       }
       if(!isset($data[$tokens[2]])) {
         $data[$tokens[2]] = array("wins"=>0,
                                   "games"=>0,
-                                  "ratio"=>0);
+                                  "ratio"=>0,
+                                  "breakdown"=>array());
       }
+      //increase the counts for calculating the ratio
       $data[$tokens[0]]["wins"] += 1;
       $data[$tokens[0]]["games"] += 1;
       $data[$tokens[2]]["games"] += 1;
+
+      //increase win count for this specific loser
+      if(!isset($data[$tokens[0]]["breakdown"][$tokens[2]])){
+        $data[$tokens[0]]["breakdown"][$tokens[2]] = 0;
+      }
+
+      $data[$tokens[0]]["breakdown"][$tokens[2]] += 1;
     }
 
     //calculate the ratios after parsing the file
@@ -253,18 +266,38 @@ if(isset($_POST["redplayer"])){
     if(sizeof($data) == 0)
       echo "<tr><td colspan=5>No game data.</td><tr>";
 
+    //Output of the array
+    //highlight_string("\$data =\n" . var_export($data, true) . ";\n");
+
     $lastRatio = -1;
     $rank = 1;
     $ties = 0;
+    //go through each user in data to build their row in the table
     foreach(array_keys($data) as $user){
+      //capture these so it is easier to output in strings
       $myusername = htmlspecialchars($user);
       $myratio = $data[$user]["ratio"];
+      $mytooltip = htmlspecialchars($user) . "'s breakdown";
 
-      //highlight the row
+      //this loop will calculate wins per username and the relative ratio
+      //will be output in the tooltip when hovering on the row
+      foreach(array_keys($data[$user]["breakdown"]) as $loser){
+        $wins = $data[$user]["breakdown"][$loser];
+        $total = $data[$user]["breakdown"][$loser];
+        //if loser has also beaten user, make sure we include those games in our total
+        if(isset($data[$loser]["breakdown"][$user])){
+          $total += $data[$loser]["breakdown"][$user];
+        }
+        $ratio = sprintf("%4.2f%%", $wins/$total*100);
+
+        $mytooltip .= "&#10;" . htmlspecialchars($loser) . ": $wins / $total = $ratio";
+      }
+
+      //highlight the row if it is us
       if($username == $myusername)
-        $tablerow = "<tr class=\"self\">";
+        $tablerow = "<tr title=\"$mytooltip\" class=\"self\">";
       else
-        $tablerow = "<tr>";
+        $tablerow = "<tr title=\"$mytooltip\">";
 
       //see if we have a tie in rank with the last guy
       if($lastRatio == $myratio)
@@ -274,7 +307,9 @@ if(isset($_POST["redplayer"])){
 
       //update the last ratio to the current one for the next iteration
       $lastRatio = $myratio;
-      echo sprintf("%s<td>%d</td><td>%s</td><td>%d</td><td>%d</td><td>%4.2f%%</td>"
+
+      //output the row
+      echo sprintf("%s<td>%d</td><td>%s</td><td>%d</td><td>%d</td><td>%4.2f%%</td></tr>"
       	  , $tablerow, $rank++ - $ties, $myusername
       	  , $data[$user]["wins"], $data[$user]["games"], $myratio*100);
     }
@@ -343,7 +378,7 @@ if(isset($_POST["redplayer"])){
     ?>
   </ul>
   <hr>
-  <?php } /* end if(username != "Admin") */ 
+  <?php } /* end if(username != "Admin") */
   else { ?>
 
   <?php } /* end else: username == "Admin" */ ?>
