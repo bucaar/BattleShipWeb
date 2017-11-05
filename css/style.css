@@ -54,15 +54,15 @@ body {
 form .label {
   display: inline-block;
   margin-right: 10px;
-  width: 150px;
+  width: 175px;
   margin-bottom: 10px;
   padding-top: 5px;
 }
 form input, form select {
-  width: 440px;
+  width: 415px;
 }
 form input[type="submit"] {
-  width: 150px;
+  width: 175px;
 }
 
 .activity, .activity th, .activity td {

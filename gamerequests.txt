@@ -1,3 +1,3 @@
+Match_Maker_2000 Winchester.jar JavaBoss.jar
 Match_Maker_2000 I_Surrender.jar OttoBattleship.jar
-Match_Maker_2000 JavaBoss.jar I_Surrender.jar
-Match_Maker_2000 JavaBoss.jar Winchester.jar
+Match_Maker_2000 I_Surrender.jar JavaBoss.jar

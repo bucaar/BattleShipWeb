@@ -35,7 +35,7 @@ $log_contents = array_reverse(explode("\n", file_get_contents("activity.log", "r
   <a href="account.php" class="hyperlink">Go Back</a>
   <form onsubmit="return false;">
     <span class="label">Smart Filter:</span><input id="filter" value="<?php echo date("m/d/Y"); ?>" onkeyup="filterTable(this.value);"><br>
-    <span class="label"></span><span>Spaces delimit search tokens. '~' prefix negates match.</span><br>
+    <span class="label"></span><span>Spaces delimit tokens.'~' prefix negates match.</span><br>
   </form>
 </div>
 <table class="activity">
